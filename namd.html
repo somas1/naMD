@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>naMD : Note as Markdown</title> 
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%20viewBox%3D%220%200%20100%20100%22%3E%0A%20%20%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22black%22%2F%3E%0A%20%20%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-size%3D%2260%22%20font-weight%3D%22bold%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22Arial%2C%20sans-serif%22%20dominant-baseline%3D%22central%22%3EN.%3C%2Ftext%3E%0A%3C%2Fsvg%3E">
+  
+  <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+  
+  <style>
+    :root {
+      --page-bg-color: #f8f9fa;
+      --page-text-color: #333;
+
+      --control-bg-color: #f8f9fa;
+      --control-text-color: buttontext;
+      --control-hover-bg-color: #f0f0f0;
+      --control-hover-text-color: #bbb;
+
+      --note-bg-color: #fff;
+      --note-placeholer-color: #bbb;
+      --note-link-color: #616161;
+
+      --attribution-color: #bbb;
+
+      /* text background colors */
+      --note-text-color-1: #000000; /* black */
+      --note-text-color-2: #FF3B30; /* red */
+      --note-text-color-3: #FF9500; /* orange */
+      --note-text-color-4: #FFCC00; /* yellow */
+      --note-text-color-5: #4CD964; /* green */
+      --note-text-color-6: #5AC8FA; /* light-blue */
+      --note-text-color-7: #007AFF; /* dark-blue */
+      --note-text-color-8: #5856D6; /* violet */
+
+      /* highlight background colors */
+      --note-highlight-color-1: #FCECEC; /* red */
+      --note-highlight-color-2: #FFECEB; /* orange */
+      --note-highlight-color-3: #FFF8E1; /* yellow */
+      --note-highlight-color-4: #F1FAE5; /* green */
+      --note-highlight-color-5: #E6F9F0; /* light-blue */
+      --note-highlight-color-6: #E8F0FE; /* violet */
+      --note-highlight-color-7: #E7F0FF; /* dark-blue */
+      --note-highlight-color-8: #F3E8FF; /* purple */
+    }
+
+    /* dark mode */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page-bg-color: #3a3a3a;
+        --page-text-color: #ddd;
+
+        --control-bg-color: #444;
+        --control-text-color: #aaa;
+        --control-hover-bg-color: #666;
+        --control-hover-text-color: #eee;
+
+        --note-bg-color: #333;
+        --note-placeholder-color: #555;
+
+        /* text background colors */
+        --note-text-color-1: #FAFAFA; /* black / white */
+        --note-text-color-2: #FF3B30; /* red */
+        --note-text-color-3: #FF9500; /* orange */
+        --note-text-color-4: #FFCC00; /* yellow */
+        --note-text-color-5: #4CD964; /* green */
+        --note-text-color-6: #5AC8FA; /* light-blue */
+        --note-text-color-7: #007AFF; /* dark-blue */
+        --note-text-color-8: #5856D6; /* violet */
+
+        /* highlight background colors */
+        --note-highlight-color-1: hsl(0 50% 30%); /* red */
+        --note-highlight-color-2: hsl(30 50% 30%); /* orange */
+        --note-highlight-color-3: hsl(45 50% 30%); /* yellow */
+        --note-highlight-color-4: hsl(120 50% 30%); /* green */
+        --note-highlight-color-5: hsl(240 70% 40%); /* light-blue */
+        --note-highlight-color-6: hsl(300 70% 40%); /* violet */
+        --note-highlight-color-7: hsl(240 50% 30%); /* dark-blue */
+        --note-highlight-color-8: hsl(330 50% 30%); /* purple */
+      }
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: var(--page-bg-color);
+      color: var(--page-text-color);
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .editor-container {
+      width: 100%;
+      max-width: 800px;
+      background: var(--note-bg-color);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .file-title {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      padding: 0px 15px;
+      outline: none;
+      border: none;
+      width: 100%;
+      background: transparent;
+      color: var(--page-text-color); /* Ensure title color matches theme */
+    }
+
+    .file-title:empty::before {
+      content: "Write your title here...";
+      color: var(--note-placeholder-color);
+      display: block;
+    }
+
+    #toolbar {
+      position: sticky;
+      position: -webkit-sticky;
+      gap: 8px;
+      top: 5px;
+      padding: 0 10px;
+      z-index: 9999;
+      background-color: var(--control-bg-color);
+      border-radius: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    #toolbar #splitbar {
+      margin-left: auto;
+    }
+
+    #toolbar input[type="file"] {
+      display: none;
+    }
+
+
+    #toolbar button,
+    #toolbar label,
+    #toolbar select {
+      padding: 8px;
+      border: none;
+      background: none;
+      color: var(--control-text-color);
+      font-size: 16px;
+      cursor: pointer;
+      transition: opacity 0.2s
+    }
+
+    #toolbar button:hover,
+    #toolbar label:hover,
+    #toolbar select:hover {
+      background: var(--control-hover-bg-color);
+      border-color: var(--control-hover-text-color);
+      color: var(--control-hover-text-color);
+    }
+
+    /* Dropdown container */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    /* Dropdown button style */
+    .dropdown>button {
+      padding: 6px 10px;
+    }
+
+    /* Dropdown content (hidden by default) */
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 110%;
+      right: 0;
+      background: var(--control-bg-color);
+      border: 1px solid var(--control-bg-color);
+      color: var(--control-text-color);
+      padding: 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      z-index: 10;
+    }
+
+    /* Show dropdown when .show is added */
+    .dropdown-content.show {
+      display: block;
+    }
+
+    /* Grid of swatches */
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 24px);
+      gap: 6px;
+    }
+
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+    }
+
+    #saveDropdown {
+      width: 200px;
+    }
+
+    #saveDropdown button {
+      width: 100%;
+      text-align: left;
+    }
+
+    /* 편집 영역 */
+    #editor {
+      border-radius: 12px;
+      padding: 15px;
+      min-height: 250px;
+      outline: none;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--page-text-color); /* Ensure editor color matches theme */
+    }
+
+    #editor p {
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+    }
+
+    #editor a {
+      color: var(--note-link-color);
+      text-decoration: none;
+      font-weight: 800;
+      transition: all 0.2s ease-in-out;
+      border-bottom: 2px solid transparent;
+    }
+
+    #editor a:hover {
+      border-bottom: 2px solid var(--note-link-color);
+      color: var(--note-link-color);
+    }
+
+    #editor a::before {
+      content: "🔗";
+    }
+
+
+    #editor:empty::before,
+    #editor p:empty::before {
+      content: "Write your note here...";
+      color: var(--note-placeholder-color);
+      display: block; /* Changed from inline-block to block */
+    }
+
+    #footer {
+      text-align: center;
+      margin-top: 20px;
+      color: var(--attribution-color);
+    }
+
+    #footer a {
+      text-decoration: none;
+      color: var(--attribution-color);
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 10px 0;
+      border-radius: 12px;
+    }
+
+    .thin-line::before {
+      content: "";
+      display: block;
+      width: 100%;
+      height: 1px;
+      background-color: var(--control-bg-color);
+      /* color: var(--control-text-color); */ /* Color doesn't apply to background */
+      margin: 10px 0;
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+
+      .editor-container {
+        width: 100%;
+        max-width: 100%;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="editor-container">
+    <div id="filename" contenteditable="plaintext-only" class="file-title"></div>
+
+    <div id="toolbar" class="no-print">
+      <button onclick="changeBlock('h1')">XL</button>
+      <button onclick="changeBlock('h2')">L</button>
+      <button onclick="changeBlock('p')">M</button>
+      <button onclick="changeBlock('small')">S</button>
+
+      <button onclick="applyFormat('strong')"><b>B</b></button>
+      <button onclick="applyFormat('em')"><i>I</i></button>
+      <button onclick="applyFormat('u')"><u>U</u></button>
+      <button onclick="applyURL()">🔗</button>
+
+      <label for="imageUpload">📷</label>
+      <input type="file" id="imageUpload" accept="image/*" onchange="insertImage(event)">
+
+      <div class="dropdown">
+        <button onclick="toggleDropdown('textColorDropdown')">Color</button>
+        <div id="textColorDropdown" class="dropdown-content">
+          <div class="swatch-grid">
+            <button class="color-swatch" style="background: var(--note-text-color-1);"
+              onmousedown="event.preventDefault();"
+              onclick="applyTextColor('1'); toggleDropdown('textColorDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-text-color-2);"
+              onmousedown="event.preventDefault();"
+              onclick="applyTextColor('2'); toggleDropdown('textColorDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-text-color-3);"
+              onmousedown="event.preventDefault();"
+              onclick="applyTextColor('3'); toggleDropdown('textColorDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-text-color-4);"
+              onmousedown="event.preventDefault();"
+              onclick="applyTextColor('4'); toggleDropdown('textColorDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-text-color-5);"
+              onmousedown="event.preventDefault();"
+              onclick="applyTextColor('5'); toggleDropdown('textColorDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-text-color-6);"
+              onmousedown="event.preventDefault();"
+              onclick="applyTextColor('6'); toggleDropdown('textColorDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-text-color-7);"
+              onmousedown="event.preventDefault();"
+              onclick="applyTextColor('7'); toggleDropdown('textColorDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-text-color-8);"
+              onmousedown="event.preventDefault();"
+              onclick="applyTextColor('8'); toggleDropdown('textColorDropdown')"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown">
+        <button onclick="toggleDropdown('highlightDropdown')">Highlight</button>
+        <div id="highlightDropdown" class="dropdown-content">
+          <div class="swatch-grid">
+            <button class="color-swatch" style="background: var(--note-highlight-color-1);"
+              onmousedown="event.preventDefault();"
+              onclick="applyHighlightColor('1'); toggleDropdown('highlightDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-highlight-color-2);"
+              onmousedown="event.preventDefault();"
+              onclick="applyHighlightColor('2'); toggleDropdown('highlightDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-highlight-color-3);"
+              onmousedown="event.preventDefault();"
+              onclick="applyHighlightColor('3'); toggleDropdown('highlightDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-highlight-color-4);"
+              onmousedown="event.preventDefault();"
+              onclick="applyHighlightColor('4'); toggleDropdown('highlightDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-highlight-color-5);"
+              onmousedown="event.preventDefault();"
+              onclick="applyHighlightColor('5'); toggleDropdown('highlightDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-highlight-color-6);"
+              onmousedown="event.preventDefault();"
+              onclick="applyHighlightColor('6'); toggleDropdown('highlightDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-highlight-color-7);"
+              onmousedown="event.preventDefault();"
+              onclick="applyHighlightColor('7'); toggleDropdown('highlightDropdown')"></button>
+            <button class="color-swatch" style="background: var(--note-highlight-color-8);"
+              onmousedown="event.preventDefault();"
+              onclick="applyHighlightColor('8'); toggleDropdown('highlightDropdown')"></button>
+          </div>
+        </div>
+      </div>
+
+      <div id="splitbar">|</div>
+      <div class="dropdown">
+        <button onclick="toggleDropdown('saveDropdown')">💾</button>
+        <div id="saveDropdown" class="dropdown-content">
+          <button onclick="toggleDropdown('saveDropdown'); exportToFile(true, true)">Save as HTML (Editable)</button>
+          <button onclick="toggleDropdown('saveDropdown'); exportToFile(false, true)">Share as HTML (Editable)</button>
+          <button onclick="toggleDropdown('saveDropdown'); exportToFile(true, false)">Save as HTML (Read-Only)</button>
+          <button onclick="toggleDropdown('saveDropdown'); exportToFile(false, false)">Share as HTML (Read-Only)</button>
+          <button onclick="exportToMarkdown()">Save as Markdown</button> 
+        </div>
+      </div>
+
+    </div>
+
+    <div id="editorContainer" class="thin-line">
+      <div id="editor" contenteditable="true"></div>
+    </div>
+
+    <div id="footer">
+      <small><a href="https://github.com/keepworking/nash">naMD (based on Nash) @github</a></small>
+    </div>
+  </div>
+
+  <script>
+
+    function setEditMode(editMode) {
+      let editor = document.getElementById("editor");
+      let toolbar = document.getElementById("toolbar");
+      let filename = document.getElementById("filename");
+
+      if (editMode) {
+        editor.contentEditable = "true";
+        filename.contentEditable = "plaintext-only";
+        toolbar.style.display = "flex";
+      }
+      else {
+        editor.contentEditable = "false";
+        filename.contentEditable = "false";
+        toolbar.style.display = "none";
+      }
+    }
+
+    async function exportToFile(save, editMode) {
+      let filename = document.getElementById("filename").innerText.trim();
+      if (!filename) {
+        alert("title is empty!");
+        return;
+      }
+
+      filename = filename.replace(/\.md$/i, ''); // Ensure filename doesn't end in .md before adding .html
+      filename = filename.endsWith(".html") ? filename : filename + ".html";
+
+      if (editMode === false) {
+        setEditMode(false);
+      }
+
+      // Update title in the content before saving
+      let currentTitleElement = document.querySelector('title');
+      if (currentTitleElement) {
+          currentTitleElement.innerText = document.getElementById("filename").innerText.trim() || "naMD : Note as Markdown";
+      }
+
+      let content = document.documentElement.outerHTML;
+      let blob = new Blob(["<!DOCTYPE html>\n" + content], { type: "text/html;charset=utf-8" });
+      let file = new File([blob], filename, { type: "text/html;charset=utf-8" });
+
+      if (editMode === false) {
+        setEditMode(true); // Revert edit mode immediately after getting content
+      }
+
+      if (save == false && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: filename,
+            text: ""
+          });
+        } catch (error) {
+          console.error("share failed:", error);
+        }
+      } else {
+        let a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a); // Append link for Firefox
+        a.click();
+        document.body.removeChild(a); // Clean up link
+        URL.revokeObjectURL(a.href);
+      }
+       // Close dropdown after action
+       toggleDropdown('saveDropdown');
+    }
+
+    // --- Added exportToMarkdown function ---
+    function exportToMarkdown() {
+        // Ensure the TurndownService class is available
+        if (typeof TurndownService === 'undefined') {
+            console.error('Turndown library is not loaded.');
+            alert('Error: Markdown conversion library not loaded.');
+            return;
+        }
+        // Configure turndown options if needed (e.g., headingStyle: 'atx')
+        const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' }); 
+
+        let filenameDiv = document.getElementById("filename");
+        let editorDiv = document.getElementById("editor");
+
+        let filename = filenameDiv.innerText.trim();
+        if (!filename) {
+            alert("Title is empty!");
+            return;
+        }
+        // Ensure .md extension
+        filename = filename.replace(/\.html$/i, '') + ".md"; // Remove .html if present, add .md
+
+        // Get HTML content from editor
+        let htmlContent = editorDiv.innerHTML;
+
+        // Convert HTML to Markdown
+        let markdownContent = '';
+        try {
+             // Add H1 for the title at the beginning of the markdown
+             let titleMarkdown = filenameDiv.innerText.trim() ? '# ' + filenameDiv.innerText.trim() + '\n\n' : '';
+             markdownContent = titleMarkdown + turndownService.turndown(htmlContent);
+        } catch (error) {
+            console.error("Markdown conversion failed:", error);
+            alert("Error converting content to Markdown.");
+            return;
+        }
+        
+        // Create Blob and File for download
+        let blob = new Blob([markdownContent], { type: "text/markdown;charset=utf-8" });
+        
+        // Trigger download link
+        let a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a); // Append link to body for Firefox compatibility
+        a.click();
+        document.body.removeChild(a); // Clean up link element
+        URL.revokeObjectURL(a.href);
+        
+        // Close the dropdown after clicking
+        toggleDropdown('saveDropdown'); 
+    }
+    // --- End added function ---
+
+
+    function insertImage(event) {
+      let file = event.target.files[0];
+      if (file) {
+        let reader = new FileReader();
+        reader.onload = function (e) {
+          let img = document.createElement("img");
+          img.src = e.target.result;
+          // Ensure image is appended within the current selection or at the end
+          let selection = window.getSelection();
+          if (selection.rangeCount > 0) {
+            let range = selection.getRangeAt(0);
+             if (document.getElementById('editor').contains(range.commonAncestorContainer)){
+                range.deleteContents(); // Remove selected content if any
+                range.insertNode(img);
+                // Move cursor after inserted image
+                range.setStartAfter(img);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+             } else { // Fallback if selection not in editor
+                 document.getElementById('editor').appendChild(img);
+             }
+          } else { // Fallback if no selection
+              document.getElementById('editor').appendChild(img);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+       // Reset file input value to allow selecting the same file again
+       event.target.value = null;
+    }
+
+    // Toggle dropdown visibility
+    function toggleDropdown(id) {
+      const dropdown = document.getElementById(id);
+      if (!dropdown) return; 
+      if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+      } else {
+        // Close any open dropdowns first
+        document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
+        dropdown.classList.add('show');
+      }
+    }
+
+    // Close dropdowns if clicking outside
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
+      }
+    });
+
+    // Helper: Place the caret at a given element and offset.
+    function setCaret(el, pos) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      // Check if the element has children; if not, set caret at start
+      if (el.firstChild) {
+           range.setStart(el.firstChild, Math.min(pos, el.firstChild.length || 0));
+      } else {
+          range.setStart(el, 0); // Set caret at start of empty element
+      }
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+
+    // Wrap only the selected portions of text nodes.
+    function wrapRangeText(range, tagName, style, hook) {
+      const textNodes = [];
+      // Helper function to traverse and find intersecting text nodes
+      function getTextNodesInRange(node, range) {
+            if (!range.intersectsNode(node)) {
+                return;
+            }
+            if (node.nodeType === Node.TEXT_NODE) {
+                 // Include node if it contains non-whitespace or if it's a boundary container
+                 if (node.textContent.trim() !== '' || range.startContainer === node || range.endContainer === node) {
+                     textNodes.push(node);
+                 }
+            } else {
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    getTextNodesInRange(node.childNodes[i], range);
+                }
+            }
+      }
+    
+      getTextNodesInRange(range.commonAncestorContainer, range);
+
+       // Handle case where selection is empty or only within non-text nodes initially
+      if (textNodes.length === 0 && range.commonAncestorContainer.nodeType === Node.TEXT_NODE) {
+           textNodes.push(range.commonAncestorContainer); 
+      } else if (textNodes.length === 0 && range.startContainer === range.endContainer && range.startContainer.nodeType !== Node.TEXT_NODE) {
+           // If selection is collapsed within an element, don't try to wrap non-existent text
+            return;
+       }
+
+
+      textNodes.forEach(function (textNode) {
+        if (!textNode.parentNode) return; 
+
+        let start = 0, end = textNode.length; 
+        
+        if (textNode === range.startContainer) {
+            start = range.startOffset;
+        }
+        if (textNode === range.endContainer) {
+            end = range.endOffset;
+        }
+        if (textNode !== range.startContainer && range.comparePoint(textNode, 0) < 0) {
+             start = 0;
+        }
+        if (textNode !== range.endContainer && range.comparePoint(textNode, textNode.length) > 0) {
+             end = textNode.length;
+        }
+
+        if (start >= end) return; 
+
+        const parent = textNode.parentNode;
+        const wrapper = document.createElement(tagName);
+        if (style) {
+          wrapper.style.cssText = style;
+        }
+        if (hook) {
+          hook(wrapper);
+        }
+        
+        const wrapRange = document.createRange();
+        wrapRange.setStart(textNode, start);
+        wrapRange.setEnd(textNode, end);
+
+        try {
+            // Use surroundContents - this is generally preferred
+            wrapRange.surroundContents(wrapper); 
+            // Place caret after the newly wrapped content
+            const selection = window.getSelection();
+            const newRange = document.createRange();
+            newRange.setStartAfter(wrapper);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+
+        } catch (e) {
+            // Fallback for complex selections or browser quirks
+            console.warn("surroundContents failed, using fragment replacement:", e);
+            wrapper.textContent = textNode.textContent.substring(start, end);
+            const frag = document.createDocumentFragment();
+            const beforeText = textNode.textContent.substring(0, start);
+            const afterText = textNode.textContent.substring(end);
+            if (beforeText) frag.appendChild(document.createTextNode(beforeText));
+            frag.appendChild(wrapper);
+            if (afterText) frag.appendChild(document.createTextNode(afterText));
+            if(parent) parent.replaceChild(frag, textNode);
+
+            // Place caret after the inserted fragment
+            const selection = window.getSelection();
+            const newRange = document.createRange();
+            newRange.setStartAfter(wrapper); // Place after the wrapper node within the fragment
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+        }
+      });
+    }
+
+    // Basic inline formatting: wraps the selection in the specified tag.
+    function applyFormat(tagName) {
+      const selection = window.getSelection();
+      if (!selection.rangeCount || selection.isCollapsed) return;
+      const range = selection.getRangeAt(0);
+      const editor = document.getElementById('editor');
+      if (!editor.contains(range.commonAncestorContainer)) return;
+      wrapRangeText(range, tagName);
+    }
+
+    // Apply inline style
+    function applyStyle(styleString) {
+      const selection = window.getSelection();
+      if (!selection.rangeCount || selection.isCollapsed) return;
+      const range = selection.getRangeAt(0);
+      const editor = document.getElementById('editor');
+      if (!editor.contains(range.commonAncestorContainer)) return;
+      wrapRangeText(range, 'span', styleString);
+    }
+
+    // Apply inline url 
+    function applyURL() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount || selection.isCollapsed) return;
+      const range = selection.getRangeAt(0);
+      const editor = document.getElementById('editor');
+      if (!editor.contains(range.commonAncestorContainer)) return;
+      const url = prompt("URL");
+      if (!url) return;
+      wrapRangeText(range, 'a', null, function (element) {
+        element.href = url;
+      });
+    }
+
+    // Apply text size
+    function applyTextSize(size) {
+      if (!size) return;
+      applyStyle("font-size: " + size + ";");
+    }
+
+    // Apply text color
+    function applyTextColor(color) {
+      if (!color) return;
+      applyStyle("color: var(--note-text-color-" + color + ");");
+    }
+
+    // Apply highlight color
+    function applyHighlightColor(color) {
+      if (!color) return;
+      applyStyle("background-color: var(--note-highlight-color-" + color + ");");
+    }
+
+   // Convert the current block 
+   function changeBlock(tag) {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        let node = selection.anchorNode;
+        const editor = document.getElementById('editor');
+        
+        while (node && node !== editor && node.parentNode !== editor) {
+            node = node.parentNode;
+        }
+        
+        if (!node || node === editor) {
+             if (selection.anchorNode && selection.anchorNode.nodeType === Node.TEXT_NODE && selection.anchorNode.parentNode === editor) {
+                  const p = document.createElement(tag);
+                  p.textContent = selection.anchorNode.textContent;
+                  editor.replaceChild(p, selection.anchorNode);
+                  node = p; 
+             } else {
+                 // Try creating a new block if selection is weird
+                 const newP = document.createElement(tag);
+                 newP.innerHTML = '<br>';
+                 editor.appendChild(newP);
+                 setCaret(newP, 0);
+                 return; 
+             }
+        }
+
+        if (node.nodeName.toLowerCase() === tag.toLowerCase()) return;
+
+        const newBlock = document.createElement(tag);
+        while (node.firstChild) {
+           newBlock.appendChild(node.firstChild);
+        }
+         if (!newBlock.innerHTML.trim()) {
+             newBlock.innerHTML = '<br>'; 
+         }
+
+        editor.replaceChild(newBlock, node);
+
+        const range = document.createRange();
+        const textNodes = Array.from(newBlock.childNodes).filter(n => n.nodeType === Node.TEXT_NODE && n.textContent);
+        const lastText = textNodes.pop();
+        if(lastText){
+            range.setStart(lastText, lastText.length); // End of last text node
+        } else if (newBlock.lastChild) {
+           range.setStartAfter(newBlock.lastChild); // After last element if no text
+        } else {
+           range.setStart(newBlock, 0); // Start of block if completely empty
+        }
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        newBlock.focus(); 
+    }
+
+
+    // Splits the current block at the caret.
+    function splitBlock() {
+        const editor = document.getElementById('editor');
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+
+        let block = range.startContainer;
+        while (block && block !== editor && block.parentNode !== editor) {
+            block = block.parentNode;
+        }
+
+        if (!block || block === editor) {
+            document.execCommand('insertParagraph', false); 
+            return; 
+        }
+
+        // Use execCommand for splitting
+         try {
+              document.execCommand('insertParagraph', false);
+         } catch (e) {
+              console.error("insertParagraph failed:", e);
+              // Basic fallback (might not work perfectly in all cases)
+              const br = document.createElement('br');
+              range.insertNode(br);
+              range.setStartAfter(br);
+              range.collapse(true);
+              selection.removeAllRanges();
+              selection.addRange(range);
+         }
+        editor.normalize(); 
+    }
+
+
+    // Normalize editor content on blur
+    function normalizeEditor() {
+        const editor = document.getElementById('editor');
+        let needsNormalization = false;
+        const validBlocks = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'small'];
+        
+        Array.from(editor.childNodes).forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+                 needsNormalization = true;
+                 const p = document.createElement('p');
+                 p.textContent = node.textContent;
+                 editor.replaceChild(p, node);
+            } else if (node.nodeType === Node.ELEMENT_NODE && !validBlocks.includes(node.nodeName.toLowerCase()) && node.nodeName !== 'IMG' && node.nodeName !== 'BR') {
+                 needsNormalization = true;
+                 while(node.firstChild){
+                      editor.insertBefore(node.firstChild, node);
+                 }
+                 editor.removeChild(node);
+            }
+        });
+
+        editor.querySelectorAll(validBlocks.join(', ')).forEach(block => {
+             Array.from(block.childNodes).forEach(child => {
+                  if (child.nodeType === Node.ELEMENT_NODE && validBlocks.includes(child.nodeName.toLowerCase())) {
+                       needsNormalization = true;
+                       while (child.firstChild) {
+                           block.insertBefore(child.firstChild, child);
+                       }
+                       block.removeChild(child);
+                  }
+             });
+        });
+
+        if (needsNormalization) {
+             editor.normalize(); 
+        }
+    }
+
+    // Clean editor state on input/focus
+    function cleanEditor() {
+        const editor = document.getElementById('editor');
+        // If empty or only contains a <br>, ensure it has <p><br></p> for typing
+        if (!editor.firstChild || (editor.childNodes.length === 1 && editor.firstChild.nodeName === 'BR') || editor.innerHTML.trim() === "") {
+             editor.innerHTML = '<p><br></p>';
+             // Set caret inside the new paragraph
+             setCaret(editor.firstChild, 0);
+             return; // Stop further cleaning if we just reset it
+        } 
+         // Remove trailing <br> tags inside blocks if they are not the only content
+         editor.querySelectorAll('p, h1, h2, h3, h4, h5, h6, small').forEach(block => {
+              while (block.lastChild && block.lastChild.nodeName === 'BR' && block.childNodes.length > 1) {
+                   block.removeChild(block.lastChild);
+              }
+         });
+
+         // Ensure the very last node isn't an unnecessary <br>
+         while (editor.lastChild && editor.lastChild.nodeName === 'BR' && editor.childNodes.length > 1) {
+             editor.removeChild(editor.lastChild);
+         }
+          // Ensure last element is a block element if editor not empty
+         if (editor.lastChild && editor.lastChild.nodeType !== Node.ELEMENT_NODE) {
+             const p = document.createElement('p');
+             p.appendChild(editor.lastChild); // Move the text node into a new paragraph
+             editor.appendChild(p);
+         }
+    }
+
+
+    // Update page title based on filename div content
+    function updateTitle() {
+      let filename = document.getElementById("filename");
+      let titleText = filename.innerText.trim(); // Use innerText to avoid HTML tags in title
+      if (filename.innerHTML === "<br>") { // Check for placeholder break tag
+        titleText = "";
+      }
+      document.title = titleText || "naMD : Note as Markdown"; // Updated default title
+    }
+
+    // Handle keydown events in the editor
+    function keydownHandler(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        splitBlock();
+      }
+    }
+
+    // Handle clicks, specifically for links within the editor
+    function clickHandler(e) {
+      const target = e.target.closest("a");
+      if (!target || !document.getElementById("editor").contains(target)) return;
+
+      e.preventDefault();
+
+      if (target.href && !target.href.startsWith(window.location.origin) && !target.href.startsWith('javascript:')) {
+          const userConfirmed = confirm(`"${target.href}" \n\nOpen this external URL?`);
+          if (userConfirmed) {
+              window.open(target.href, "_blank");
+          }
+      } else if (target.href && target.href.startsWith(window.location.origin)) {
+         window.location.href = target.href;
+      }
+    }
+
+    // Warn user about unsaved changes before leaving the page
+    function unloadHandler(e) {
+      if (document.getElementById("editor").contentEditable !== "true") {
+        return; 
+      }
+      const editorContent = document.getElementById("editor").innerText.trim();
+      const titleContent = document.getElementById("filename").innerText.trim();
+      
+      if (editorContent || titleContent) { 
+          e.preventDefault()
+          e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    }
+
+    // --- Initialization ---
+    const editor = document.getElementById('editor');
+    const filename = document.getElementById('filename');
+
+    editor.addEventListener('keydown', keydownHandler);
+    editor.addEventListener('click', clickHandler);
+    editor.addEventListener('blur', normalizeEditor); 
+    editor.addEventListener("input", cleanEditor); 
+    editor.addEventListener("focus", cleanEditor); 
+
+    filename.addEventListener("input", updateTitle);
+    filename.addEventListener("blur", updateTitle); 
+
+    window.addEventListener("beforeunload", unloadHandler);
+
+    // Initial setup on page load
+    updateTitle();
+    cleanEditor(); // Set initial editor state
+
+  </script>
+
+</body>
+
+</html>

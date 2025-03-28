@@ -1,0 +1,41 @@
+# docker-compose.yaml (Base Gateway Definition)
+
+services:
+  tailscale:
+    build:
+      context: . # Assumes Dockerfile/entrypoint.sh are here
+    image: my-tailscale-gateway-base # Name for the base image
+    container_name: ${COMPOSE_PROJECT_NAME:-project}_tailscale_gw # Unique container name using project name
+    hostname: ${TS_HOSTNAME:-${COMPOSE_PROJECT_NAME}tailscalegw} # Use TS_HOSTNAME from env, default based on project name
+    volumes:
+      # Volume is automatically namespaced by project name (e.g., myproject_tailscale_state)
+      - tailscale_state:/var/lib/tailscale
+      - /var/run/tailscale:/var/run/tailscale
+    networks:
+      # Service needs to be on the network defined below
+      - tailscale-net
+    environment:
+      # --- Core Tailscale Config ---
+      # Loaded via script (prompt) or host export - DO NOT hardcode or put in .env unless secured
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      # --- Project Specific Config (Set via .env or override file) ---
+      # Customize the Tailscale node hostname (optional)
+      - TS_HOSTNAME=${TS_HOSTNAME:-${COMPOSE_PROJECT_NAME}gw}
+      # Extra 'tailscale up' flags (e.g., tags for ACLs - essential for Funnel)
+      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS:---advertise-tags=tag:server} # Default tag:server
+      # Enable Funnel (requires correct ACLs and TS_EXTRA_ARGS tag)
+      - TS_FUNNEL_ENABLE=${TS_FUNNEL_ENABLE:-false}
+      # Serve JSON configuration ( MANDATORY if using Serve - provide via .env or override )
+      - TS_SERVE_CONFIG_JSON=${TS_SERVE_CONFIG_JSON}
+    restart: unless-stopped
+    # capabilities/devices are commented out assuming userspace-networking
+
+# Define the named volume for persisting Tailscale state (namespaced by project)
+volumes:
+  tailscale_state:
+
+# Define the custom bridge network for inter-container communication
+networks:
+  tailscale-net:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME:-project}_tailscale_net # Explicitly name network with project prefix
